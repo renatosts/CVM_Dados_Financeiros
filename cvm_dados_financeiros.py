@@ -177,31 +177,25 @@ df = df.fillna(0)
 df.ano = df.ano.astype(int)
 
 df['ativo'] = df['1']
+df['caixa'] = df['1.01.01'] + df['1.01.02']
+df['divida_curto_prazo'] = df['2.01.04']
+df['divida_longo_prazo'] = df['2.02.01']
+df['divida_total'] = df['divida_curto_prazo'] + df['divida_longo_prazo']
 df['patr_liq'] = df['2.03']
 df['receita'] = df['3.01']
 df['lucro_bruto'] = df['3.03']
 df['lucro_liq'] = df['3.11']
 df['EBIT'] = df['3.05']
-df['divida_curto_prazo'] = df['2.01.04']
-df['divida_longo_prazo'] = df['2.02.01']
-df['caixa'] = df['1.01.01'] + df['1.01.02']
-df['divida_total'] = df['divida_curto_prazo'] + df['divida_longo_prazo']
-df['EBIT_taxa'] = round(df['EBIT'] / df['receita'], 2)
 
 df['endivid_taxa'] = round(df['divida_total'] / df['ativo'], 2)
-df['net_rate'] = round(df['lucro_liq'] / df['receita'] * 100, 2)
+df['margem_liq'] = round(df['lucro_liq'] / df['receita'] * 100, 2)
 df['EBITDA'] = round(df['EBIT'] + df['deprec_amortiz'], 2)
 df['divida_liq'] = round((df['divida_total'] - df['caixa']) / df['EBITDA'], 2)
-df['ROA'] = round(df['EBITDA'] / df['ativo'], 2)
-#df['size'] = np.log(df['ativo'])
-df['ROE'] = round(df['lucro_liq'] / df['patr_liq'], 2)
-df['GAO'] = round(df['EBIT'] / df['lucro_bruto'], 2)
 
 df = df[['form', 'cod_cvm', 'ano', 'dt_ref',
        'ativo', 'patr_liq', 'receita', 'lucro_bruto', 'lucro_liq', 'EBIT',
        'divida_curto_prazo', 'divida_longo_prazo', 'caixa', 'divida_total',
-       'EBIT_taxa', 'endivid_taxa', 'net_rate', 'EBITDA', 'divida_liq', 'ROA',
-       'ROE', 'GAO']]
+       'endivid_taxa', 'margem_liq', 'EBITDA', 'divida_liq']]
 
 df_ultimo_ano = df.groupby(['form', 'cod_cvm']).max('ano').reset_index()[['form', 'cod_cvm', 'ano']]
 ano_anterior = df.ano.max() - 1
