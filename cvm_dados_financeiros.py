@@ -1,22 +1,14 @@
 from bs4 import BeautifulSoup
 from datetime import date, datetime, timedelta
-from pandas.tseries.offsets import MonthEnd
 from zipfile import ZipFile
-import json
-import numpy as np
 import os
 import pandas as pd
 import re
 import requests as req
-import sqlite3
 
-from sqlalchemy import values
+#dbname = 'CVM_Dados_Financeiros.db'
 
-dbname = 'CVM_Dados_Financeiros.db'
-
-conn = sqlite3.connect(dbname)
-
-data_hoje = datetime.today().strftime('%Y-%m-%d')
+#conn = sqlite3.connect(dbname)
 
 def download(url: str, dest_folder: str):
     if not os.path.exists(dest_folder):
@@ -40,7 +32,6 @@ def download(url: str, dest_folder: str):
 def download_arquivos_CVM(tipo):
 
     # Acessa site CVM para verificar arquivos anuais para download
-
 
     URL_CVM = f'http://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/{tipo}/DADOS/'
 
@@ -86,15 +77,6 @@ def download_arquivos_CVM(tipo):
         download(URL_CVM + arq, dest_folder=rf'Base_CVM\{tipo}')
 
 
-base_download_cvm = ['DFP', 'ITR', 'FRE', 'FCA']
-
-for tipo in base_download_cvm:
-    print(tipo)
-    download_arquivos_CVM(tipo)
-
-
-
-
 def processa_base_cvm(tipo, arquivo):
 
     df = pd.DataFrame()
@@ -114,6 +96,33 @@ def processa_base_cvm(tipo, arquivo):
 
     return df
 
+
+data_hoje = datetime.today().strftime('%Y-%m-%d')
+
+base_download_cvm = ['DFP', 'ITR', 'FRE', 'FCA']
+
+for tipo in base_download_cvm:
+    print(tipo)
+    download_arquivos_CVM(tipo)
+
+
+fre_classe_acao = processa_base_cvm('FRE', 'capital_social_classe_acao')
+
+cadastro = processa_base_cvm('FCA', 'geral')
+cadastro  = cadastro.groupby('CNPJ_Companhia')[['Codigo_CVM', 'Nome_Empresarial', 'Setor_Atividade', 'Pagina_Web']].last().reset_index()
+cadastro.columns = ['cnpj', 'cod_cvm', 'nome', 'setor', 'site']
+
+
+# Determina tickers de negociação
+cadastro_tickers = processa_base_cvm('FCA', 'valor_mobiliario')
+tickers = cadastro_tickers[['CNPJ_Companhia', 'Codigo_Negociacao']].drop_duplicates().dropna()
+tickers = tickers.groupby(['CNPJ_Companhia']).agg({'Codigo_Negociacao': ','.join}).reset_index()
+tickers.columns = ['cnpj', 'ticker']
+
+
+cadastro = cadastro.merge(tickers, on='cnpj')
+
+# Dados Financeiros
 balanco_ativo = processa_base_cvm('DFP', 'BPA_con')
 balanco_passivo = processa_base_cvm('DFP', 'BPP_con')
 dre = processa_base_cvm('DFP', 'DRE_con')
@@ -128,12 +137,6 @@ dfp.VL_CONTA = dfp.VL_CONTA.astype(float)
 
 #dfp.VL_CONTA = dfp.VL_CONTA / 100
 
-
-fre_classe_acao = processa_base_cvm('FRE', 'capital_social_classe_acao')
-
-cadastro = processa_base_cvm('FCA', 'geral')
-
-cadastro_tickers = processa_base_cvm('FCA', 'valor_mobiliario')
 
 
 dfp['ano'] = dfp['DT_REFER'].str[:4]
@@ -206,6 +209,8 @@ ano_anterior = df.ano.max() - 1
 empresas_ano_anterior = df_ultimo_ano[df_ultimo_ano.ano >= ano_anterior]['cod_cvm']
 
 df = df[df.cod_cvm.isin(empresas_ano_anterior)]
+
+df = df.merge(cadastro, on='cod_cvm')
 
 df[df.cod_cvm == 5410]
 
