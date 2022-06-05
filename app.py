@@ -273,7 +273,7 @@ df['lucro_liq'] = df['3.11']
 df['EBIT'] = df['3.05']
 
 df['endivid_taxa'] = round(df['divida_total'] / df['ativo'], 2)
-df['margem_liq'] = round(df['lucro_liq'] / df['receita_liq'] * 100, 2)
+df['margem_liq'] = round(df['lucro_liq'] / df['receita_liq'], 2)
 df['EBITDA'] = round(df['EBIT'] + df['deprec_amortiz'], 2)
 df['divida_liq'] = round((df['divida_total'] - df['caixa']) / df['EBITDA'], 2)
 
