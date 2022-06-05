@@ -24,6 +24,7 @@ def cria_cadastro():
     tickers = tickers[~tickers.Codigo_Negociacao.str.contains('*', regex=False)]
     tickers = tickers.groupby(['CNPJ_Companhia']).agg({'Codigo_Negociacao': ','.join}).reset_index()
     tickers.columns = ['cnpj', 'ticker']
+    tickers.ticker = tickers.ticker.str.upper()
 
     cadastro = cadastro.merge(tickers, on='cnpj')
 
